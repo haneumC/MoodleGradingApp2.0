@@ -2,6 +2,7 @@
 By: Emily Costa & Michael Sisko
 
 Continued By: Prince Nuertey Padi & Haneum Cha
+
 Advisor: Victor Norman
 
 ## Project Information
