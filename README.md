@@ -8,7 +8,7 @@ Advisor: Victor Norman
 
 [Documentation](https://github.com/MoodleGradingApp/Client/tree/master/assets)
 
-## Proejct Setup
+## Project Setup
 ```
 git clone https://github.com/MoodleGradingApp/Client.git
 ```
