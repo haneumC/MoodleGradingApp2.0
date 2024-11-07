@@ -1,16 +1,21 @@
-"use client";
-
 import React, { useState, useMemo } from "react";
 import {
   ColumnDef,
   SortingState,
   flexRender,
   getCoreRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Table, TableHead, TableBody, TableCell, TableRow } from "./table";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import './StudentList.css';
 
 // Define Student type
@@ -28,52 +33,45 @@ const StudentList: React.FC = () => {
     { name: "Jane Smith", email: "js34", timestamp: "2024-10-30", grade: "-2", feedback: "Poor indentation" },
     { name: "Alice Brown", email: "ab56", timestamp: "2024-10-29", grade: "-3", feedback: "Add more comments" },
     { name: "Bob White", email: "bw78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
-    { name: "Dwight Farefield", email: "DF91", timestamp: "2024-11-28", grade: "-20", feedback: "No submission" },
-    { name: "asdf White", email: "bw78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
-    { name: "dfasdfa", email: "bw78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
-    { name: "fasdfsdfdfd", email: "bw78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
-    { name: "qwererererre", email: "bw78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" }
+    { name: "Dwight Farefield", email: "df91", timestamp: "2024-11-28", grade: "-20", feedback: "No submission" },
+    { name: "Tim Qwerty", email: "tq78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "Meg Thomas", email: "mt78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "Spam Ham", email: "sh78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "Tuna Mayo", email: "tm78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "Peppers Nonion", email: "pn78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "asdf asdf", email: "aa78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "zxcvz xcvb", email: "zx78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "qwerer ererre", email: "qe78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "Tom Fissher", email: "tf78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "Happy Molly", email: "hm78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "Holden Caulfield", email: "hc78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    { name: "Angular Angler", email: "aa78", timestamp: "2024-10-28", grade: "-20", feedback: "No submission" },
+    // Additional students here...
   ]);
 
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set()); // Track selected rows by name
-
-  // Sorting state
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
-  // Define columns with sorting functions for timestamp and grade
   const columns = useMemo<ColumnDef<Student>[]>(() => [
-    {
-      accessorKey: "name",
-      header: "Name",
-      cell: (info) => info.getValue(),
-    },
-    {
-      accessorKey: "email",
-      header: "Email",
-      cell: (info) => info.getValue(),
-    },
+    { accessorKey: "name", header: "Name", cell: info => info.getValue() },
+    { accessorKey: "email", header: "Email", cell: info => info.getValue() },
     {
       accessorKey: "timestamp",
       header: "Timestamp",
-      cell: (info) => info.getValue(),
+      cell: info => info.getValue(),
       sortingFn: (rowA, rowB) =>
         new Date(rowA.original.timestamp) > new Date(rowB.original.timestamp) ? 1 : -1,
     },
     {
       accessorKey: "grade",
       header: "Grade",
-      cell: (info) => info.getValue(),
+      cell: info => info.getValue(),
       sortingFn: (rowA, rowB) =>
         parseInt(rowA.original.grade) - parseInt(rowB.original.grade),
     },
-    {
-      accessorKey: "feedback",
-      header: "Feedback",
-      cell: (info) => info.getValue(),
-    },
+    { accessorKey: "feedback", header: "Feedback", cell: info => info.getValue() },
   ], []);
 
-  // Create table instance
   const table = useReactTable({
     data: students,
     columns,
@@ -81,10 +79,8 @@ const StudentList: React.FC = () => {
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
 
-  // Function to toggle row selection and handle selection logic
   const toggleRowSelection = (name: string) => {
     const newSelectedRows = new Set(selectedRows);
     if (newSelectedRows.has(name)) {
@@ -93,12 +89,6 @@ const StudentList: React.FC = () => {
       newSelectedRows.add(name);
     }
     setSelectedRows(newSelectedRows);
-    studentSelect(newSelectedRows); // Call the studentSelect function with new selected rows
-  };
-
-  // Function to handle actions when row is selected (e.g., logging or additional logic)
-  const studentSelect = (selectedRows: Set<string>) => {
-    console.log("This student is selected: ", Array.from(selectedRows)); // Log the selected rows
   };
 
   return (
@@ -111,38 +101,35 @@ const StudentList: React.FC = () => {
           <button className="studentBtn">Load Progress</button>
         </div>
         <div className="rounded-md border">
-          <Table>
-            {/* Table Header */}
-            <TableHead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableCell
-                      key={header.id}
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      {header.isPlaceholder ? null : (
-                        <div>
+          <div className="table-container">
+            <Table>
+              <TableCaption>A list of recent student submissions.</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  {table.getHeaderGroups().map(headerGroup => (
+                    <React.Fragment key={headerGroup.id}>
+                      {headerGroup.headers.map(header => (
+                        <TableHead
+                          key={header.id}
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="cursor-pointer"
+                        >
                           {flexRender(header.column.columnDef.header, header.getContext())}{" "}
                           {header.column.getIsSorted() ? (header.column.getIsSorted() === "desc" ? "▲" : "▼") : "⇅"}
-                        </div>
-                      )}
-                    </TableCell>
+                        </TableHead>
+                      ))}
+                    </React.Fragment>
                   ))}
                 </TableRow>
-              ))}
-            </TableHead>
-
-            {/* Table Body with Scroll */}
-            <div className="table-container">
+              </TableHeader>
               <TableBody>
-                {table.getRowModel().rows.map((row) => (
+                {table.getRowModel().rows.map(row => (
                   <TableRow
                     key={row.id}
                     className={selectedRows.has(row.original.name) ? 'selected' : ''}
-                    onClick={() => toggleRowSelection(row.original.name)} // Toggle selection on click
+                    onClick={() => toggleRowSelection(row.original.name)}
                   >
-                    {row.getVisibleCells().map((cell) => (
+                    {row.getVisibleCells().map(cell => (
                       <TableCell key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
@@ -150,8 +137,8 @@ const StudentList: React.FC = () => {
                   </TableRow>
                 ))}
               </TableBody>
-            </div>
-          </Table>
+            </Table>
+          </div>
         </div>
       </div>
     </div>
