@@ -20,7 +20,7 @@ npm install
 
 ## Compile and hot-reloads for development
 ```
-ng serve
+npm run dev
 ```
 
 ## Compile and build files for deployment
