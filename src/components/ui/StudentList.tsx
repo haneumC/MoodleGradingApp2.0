@@ -104,24 +104,24 @@ const StudentList: React.FC = () => {
           <div className="table-container">
             <Table>
               <TableCaption>A list of recent student submissions.</TableCaption>
-              <TableHeader>
-                <TableRow>
-                  {table.getHeaderGroups().map(headerGroup => (
-                    <React.Fragment key={headerGroup.id}>
-                      {headerGroup.headers.map(header => (
-                        <TableHead
-                          key={header.id}
-                          onClick={header.column.getToggleSortingHandler()}
-                          className="cursor-pointer"
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}{" "}
-                          {header.column.getIsSorted() ? (header.column.getIsSorted() === "desc" ? "▲" : "▼") : "⇅"}
-                        </TableHead>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </TableRow>
-              </TableHeader>
+                <TableHeader>
+                    <TableRow className="header-row">
+                        {table.getHeaderGroups().map(headerGroup => (
+                        <React.Fragment key={headerGroup.id}>
+                            {headerGroup.headers.map(header => (
+                            <TableHead
+                                key={header.id}
+                                onClick={header.column.getToggleSortingHandler()}
+                                className="header-cell cursor-pointer"
+                            >
+                                {flexRender(header.column.columnDef.header, header.getContext())}{" "}
+                                {header.column.getIsSorted() ? (header.column.getIsSorted() === "desc" ? "▲" : "▼") : "⇅"}
+                            </TableHead>
+                            ))}
+                        </React.Fragment>
+                        ))}
+                    </TableRow>
+                </TableHeader>
               <TableBody>
                 {table.getRowModel().rows.map(row => (
                   <TableRow

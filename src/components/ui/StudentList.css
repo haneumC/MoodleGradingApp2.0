@@ -39,6 +39,19 @@
     border: 1px solid #ccc;
   }
 
+  .header-row {
+    background-color: #878787;
+  }
+
+  .header-cell {
+    color: white;
+  }
+
+  .header-cell:hover {
+    background-color: #687aef; /* Light gray highlight */
+    transition: background-color 0.3s ease; /* Smooth transition */
+  }
+
   .table-container {
     max-height: 600px; /* Adjust the height as needed */
     overflow-y: auto;
