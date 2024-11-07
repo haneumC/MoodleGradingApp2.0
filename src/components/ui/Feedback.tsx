@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
 import './Feedback.css';
 
-const Feedback = () => {
-  const [feedbackItems, setFeedbackItems] = useState([
+interface FeedbackItem {
+  id: number;
+  text: string;
+  deduction: number;
+  applied: boolean;
+}
+
+const Feedback: React.FC = () => {
+  const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([
     { id: 1, text: 'Add more comments', deduction: 3, applied: false },
     { id: 2, text: 'Poor indentation', deduction: 2, applied: false },
     { id: 3, text: 'Looks good!', deduction: 0, applied: false },
     { id: 4, text: 'No submission.', deduction: 20, applied: false },
   ]);
 
-  const handleCheckboxChange = (id) => {
-    setFeedbackItems(feedbackItems.map(item => 
+  const handleCheckboxChange = (id: number) => {
+    setFeedbackItems(feedbackItems.map(item =>
       item.id === id ? { ...item, applied: !item.applied } : item
     ));
   };
@@ -54,4 +61,3 @@ const Feedback = () => {
 };
 
 export default Feedback;
-
