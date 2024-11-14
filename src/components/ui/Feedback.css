@@ -1,5 +1,5 @@
 .feedback-container {
-    background-color: #3d3c3f;
+    background-color: #1e1e1e;
     color: white;
     padding: 20px;
     border-radius: 8px;
@@ -37,13 +37,18 @@
     display: grid;
     grid-template-columns: 1fr auto auto;
     align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid #444;
+    padding: 8px;
+    margin-bottom: 4px;
+    background-color: #2d2d3d;
+    border-left: 4px solid #6b5de3;
+    color: #ffffff;
   }
   
   .feedback-text {
     display: flex;
     align-items: center;
+    color: #ffffff;
+    padding-left: 8px;
   }
   
   .icon-trash {
@@ -53,6 +58,7 @@
   
   .feedback-deduction {
     text-align: center;
+    color: #ffffff;
   }
   
   .add-feedback {
@@ -62,5 +68,15 @@
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
+  }
+  
+  .feedback-check {
+    color: #4CAF50;
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  input[type="checkbox"] {
+    accent-color: #4CAF50;
   }
   
