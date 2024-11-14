@@ -105,7 +105,7 @@ const StudentList: React.FC = () => {
             <Table>
               <TableCaption>A list of recent student submissions.</TableCaption>
                 <TableHeader>
-                    <TableRow className="header-row">
+                    <TableRow className="header-row  sticky top-0 z-[10]">
                         {table.getHeaderGroups().map(headerGroup => (
                         <React.Fragment key={headerGroup.id}>
                             {headerGroup.headers.map(header => (

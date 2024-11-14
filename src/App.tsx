@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css'; // Import the CSS file
 import Feedback from './components/Feedback/Feedback';
-import StudentList from './components/ui/StudentList';
+import StudentList from './components/StudentList/StudentList';
 
 const App: React.FC = () => {
   return (
