@@ -1,5 +1,5 @@
 import React from 'react';
-import './App.css'; // Import the CSS file
+import './App.css';
 import Feedback from './components/Feedback/Feedback';
 import StudentList from './components/StudentList/StudentList';
 
