@@ -1,25 +1,9 @@
 import React, { useState, useMemo } from "react";
-import { parse } from "csv-parse/browser/esm"; // Import csv-parse for the browser environment
-import {
-  ColumnDef,
-  SortingState,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ColumnDef, SortingState, flexRender, getCoreRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { parse } from "csv-parse/browser/esm";
 import './StudentList.css';
 
-// Define Student type
 interface Student {
   name: string;
   email: string;
@@ -32,6 +16,7 @@ const StudentList: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string>("");
 
   const columns = useMemo<ColumnDef<Student>[]>(() => [
     { accessorKey: "name", header: "Name", cell: info => info.getValue() },
@@ -69,43 +54,70 @@ const StudentList: React.FC = () => {
     } else {
       newSelectedRows.add(name);
     }
+    console.log(newSelectedRows);
     setSelectedRows(newSelectedRows);
   };
 
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setStudents([]);
       const fileReader = new FileReader();
       fileReader.onload = (event) => {
         const text = event.target?.result as string;
-
-        parse(
-          text,
-          {
-            columns: true,
-            trim: true,
-          },
-          (err, output: Record<string, string>[]) => {
-            if (err) {
-              console.error("Error parsing CSV:", err);
-              return;
-            }
-
-            const parsedStudents = output.map((student) => ({
-              name: student["Name"] || "",
-              email: student["Email"] || "",
-              timestamp: student["Timestamp"] || "",
-              grade: student["Grade"] || "",
-              feedback: student["Feedback"] || "",
-            }));
-
-            setStudents(parsedStudents);
-          }
-        );
+        validateCSV(text);
       };
       fileReader.readAsText(file);
     }
   };
+
+  // Validate the CSV file's headers and rows
+const validateCSV = (csvString: string) => {
+  parse(csvString, { delimiter: "," }, (err, output: string[][]) => {
+    if (err) {
+      setError("Error parsing the CSV file.");
+      return;
+    }
+
+    const headerRow: string[] = output[0];
+    console.log("Parsed Headers:", headerRow);
+
+    const requiredHeaders: string[] = ["Name", "Email", "Timestamp", "Grade", "Feedback"];
+    
+    const missingHeaders: string[] = requiredHeaders.filter(header => !headerRow.includes(header));
+    if (missingHeaders.length > 0) {
+      setError(`Missing required columns: ${missingHeaders.join(", ")}`);
+      return;
+    }
+
+    const parsedStudents = output.slice(1).map((row: string[]) => {
+      const student: Record<string, string> = {};
+      headerRow.forEach((header: string, index: number) => {
+        student[header] = row[index] || "";
+      });
+      return student;
+    });
+
+    const invalidStudents = parsedStudents.filter((student: Record<string, string>) =>
+      !student["Name"] || !student["Email"] || !student["Timestamp"]
+    );
+
+    if (invalidStudents.length > 0) {
+      setError("Some rows contain missing or invalid data.");
+      return;
+    }
+
+    setStudents(parsedStudents.map((student: Record<string, string>) => ({
+      name: student["Name"] || "",
+      email: student["Email"] || "",
+      timestamp: student["Timestamp"] || "",
+      grade: student["Grade"] || "",
+      feedback: student["Feedback"] || "",
+    })));
+    setError("");
+  });
+};
+
 
   return (
     <div className="layout">
@@ -127,6 +139,7 @@ const StudentList: React.FC = () => {
           <button className="studentBtn">Save Progress</button>
           <button className="studentBtn">Load Progress</button>
         </div>
+        {error && <div className="error-message">{error}</div>}
         <div className="rounded-md border">
           <div className="table-container">
             <Table>
