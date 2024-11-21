@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { parse } from "csv-parse/browser/esm"; // Import csv-parse for the browser environment
 import {
   ColumnDef,
   SortingState,
@@ -77,35 +78,33 @@ const StudentList: React.FC = () => {
       const fileReader = new FileReader();
       fileReader.onload = (event) => {
         const text = event.target?.result as string;
-        csvFileToArray(text);
+
+        parse(
+          text,
+          {
+            columns: true,
+            trim: true,
+          },
+          (err, output: Record<string, string>[]) => {
+            if (err) {
+              console.error("Error parsing CSV:", err);
+              return;
+            }
+
+            const parsedStudents = output.map((student) => ({
+              name: student["Name"] || "",
+              email: student["Email"] || "",
+              timestamp: student["Timestamp"] || "",
+              grade: student["Grade"] || "",
+              feedback: student["Feedback"] || "",
+            }));
+
+            setStudents(parsedStudents);
+          }
+        );
       };
       fileReader.readAsText(file);
     }
-  };
-
-  const csvFileToArray = (string: string) => {
-    const csvHeader = string.slice(0, string.indexOf("\n")).split(",");
-    const csvRows = string.slice(string.indexOf("\n") + 1).split("\n");
-
-    const filteredRows = csvRows.filter(row => row.trim() !== "");
-
-    const array = filteredRows.map(i => {
-      const values = i.split(",");
-      const obj = csvHeader.reduce((object, header, index) => {
-        object[header.trim()] = values[index]?.trim() || "";
-        return object;
-      }, {} as Record<string, string>);
-      return obj;
-    });
-
-    const parsedStudents = array.map((student: Record<string, string>) => ({
-      name: student["Name"] || "",
-      email: student["Email"] || "",
-      timestamp: student["Timestamp"] || "",
-      grade: student["Grade"] || "",
-      feedback: student["Feedback"] || "",
-    }));
-    setStudents(parsedStudents);
   };
 
   return (
