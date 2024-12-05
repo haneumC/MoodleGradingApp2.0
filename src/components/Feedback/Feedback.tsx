@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
 interface FeedbackItem {
@@ -18,6 +17,9 @@ interface FeedbackItem {
   deduction: number;
   applied: boolean;
 }
+
+type SortField = 'text' | 'deduction' | 'applied';
+type SortDirection = 'asc' | 'desc';
 
 const Feedback: React.FC = () => {
   const defaultFeedback: FeedbackItem[] = [
@@ -35,6 +37,9 @@ const Feedback: React.FC = () => {
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
+  const [editingDeduction, setEditingDeduction] = useState(0);
+  const [sortField, setSortField] = useState<SortField>('text');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const handleAddFeedback = () => {
     if (newFeedback.text.trim()) {
@@ -55,11 +60,14 @@ const Feedback: React.FC = () => {
   const handleStartEdit = (item: FeedbackItem) => {
     setEditingId(item.id);
     setEditingText(item.text);
+    setEditingDeduction(item.deduction);
   };
 
   const handleAcceptEdit = (id: number) => {
     setFeedbackItems(feedbackItems.map(item =>
-      item.id === id ? { ...item, text: editingText } : item
+      item.id === id 
+        ? { ...item, text: editingText, deduction: editingDeduction } 
+        : item
     ));
     setEditingId(null);
   };
@@ -72,19 +80,77 @@ const Feedback: React.FC = () => {
     setFeedbackItems(feedbackItems.filter(item => item.id !== id));
   };
 
+  const getSortedFeedbackItems = () => {
+    return [...feedbackItems].sort((a, b) => {
+      if (sortField === 'text') {
+        return sortDirection === 'asc' 
+          ? a.text.localeCompare(b.text)
+          : b.text.localeCompare(a.text);
+      }
+      if (sortField === 'deduction') {
+        return sortDirection === 'asc' 
+          ? a.deduction - b.deduction
+          : b.deduction - a.deduction;
+      }
+      // sorting for applied field
+      return sortDirection === 'asc' 
+        ? Number(a.applied) - Number(b.applied)
+        : Number(b.applied) - Number(a.applied);
+    });
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   return (
     <div className="bg-[#1e1e1e] p-4 rounded-md h-[calc(100vh-380px)] flex flex-col mt-5">
       <Table>
         <TableHeader className="border-b border-[#444]">
           <TableRow className="hover:bg-transparent">
-            <TableHead className="text-[#e1e1e1]">Feedback</TableHead>
-            <TableHead className="w-[100px] text-[#e1e1e1]">Deduction</TableHead>
-            <TableHead className="w-[80px] text-[#e1e1e1]">Apply</TableHead>
+            <TableHead 
+              className="text-[#e1e1e1] cursor-pointer"
+              onClick={() => handleSort('text')}
+            >
+              Feedback
+              {sortField === 'text' && (
+                <span className="ml-2">
+                  {sortDirection === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </TableHead>
+            <TableHead 
+              className="w-[100px] text-[#e1e1e1] cursor-pointer"
+              onClick={() => handleSort('deduction')}
+            >
+              Deduction
+              {sortField === 'deduction' && (
+                <span className="ml-2">
+                  {sortDirection === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </TableHead>
+            <TableHead 
+              className="w-[80px] text-[#e1e1e1] cursor-pointer"
+              onClick={() => handleSort('applied')}
+            >
+              Apply
+              {sortField === 'applied' && (
+                <span className="ml-2">
+                  {sortDirection === 'asc' ? '↑' : '↓'}
+                </span>
+              )}
+            </TableHead>
             <TableHead className="w-[100px] text-[#e1e1e1]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {feedbackItems.map((item) => (
+          {getSortedFeedbackItems().map((item) => (
             <TableRow key={item.id} className="border-b border-[#333] hover:bg-[#2d2d2d]">
               {editingId === item.id ? (
                 <>
@@ -95,7 +161,16 @@ const Feedback: React.FC = () => {
                       className="bg-[#2d2d2d] border-[#444] text-white min-h-[60px] resize-y"
                     />
                   </TableCell>
-                  <TableCell className="text-right pr-5 text-white">{item.deduction}</TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={editingDeduction}
+                      onChange={(e) => setEditingDeduction(Number(e.target.value))}
+                      className="w-[80px] bg-[#2d2d2d] border-[#444] text-white"
+                      min={0}
+                      max={20}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button 
@@ -125,19 +200,27 @@ const Feedback: React.FC = () => {
                       {item.text}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right pr-5 text-white">{item.deduction}</TableCell>
+                  <TableCell 
+                    className="text-right pr-5 text-white cursor-pointer"
+                    onClick={() => handleStartEdit(item)}
+                  >
+                    {item.deduction}
+                  </TableCell>
                   <TableCell>
-                    <Checkbox
-                      checked={item.applied}
-                      onCheckedChange={() => {
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
                         setFeedbackItems(feedbackItems.map(feedback => 
                           feedback.id === item.id 
                             ? { ...feedback, applied: !feedback.applied }
                             : feedback
                         ));
                       }}
-                      className="border-white data-[state=checked]:bg-[#4CAF50] data-[state=checked]:border-[#4CAF50]"
-                    />
+                      className={`w-6 h-6 ${item.applied ? 'text-[#4CAF50]' : 'text-gray-400'}`}
+                    >
+                      ✓
+                    </Button>
                   </TableCell>
                   <TableCell>
                     <Button
