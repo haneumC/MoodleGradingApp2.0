@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import Papa from 'papaparse';
 import {
   ColumnDef,
   SortingState,
@@ -25,12 +26,24 @@ interface Student {
   timestamp: string;
   grade: string;
   feedback: string;
+  appliedIds: number[];
 }
 
-const StudentList: React.FC = () => {
-  const [students, setStudents] = useState<Student[]>([]);
+interface StudentListProps {
+  students: Student[];
+  setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+  selectedStudent: string | null;
+  onStudentSelect: (studentName: string) => void;
+}
+
+const StudentList: React.FC<StudentListProps> = ({
+  students,
+  setStudents,
+  selectedStudent,
+  onStudentSelect
+}) => {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string>("");
 
   const columns = useMemo<ColumnDef<Student>[]>(() => [
     { accessorKey: "name", header: "Name", cell: info => info.getValue() },
@@ -49,7 +62,15 @@ const StudentList: React.FC = () => {
       sortingFn: (rowA, rowB) =>
         parseInt(rowA.original.grade) - parseInt(rowB.original.grade),
     },
-    { accessorKey: "feedback", header: "Feedback", cell: info => info.getValue() },
+    { 
+      accessorKey: "feedback", 
+      header: "Feedback", 
+      cell: info => (
+        <div style={{ whiteSpace: 'pre-line' }}>
+          {info.getValue() as string}
+        </div>
+      )
+    },
   ], []);
 
   const table = useReactTable({
@@ -61,51 +82,83 @@ const StudentList: React.FC = () => {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const toggleRowSelection = (name: string) => {
-    const newSelectedRows = new Set(selectedRows);
-    if (newSelectedRows.has(name)) {
-      newSelectedRows.delete(name);
-    } else {
-      newSelectedRows.add(name);
-    }
-    setSelectedRows(newSelectedRows);
-  };
-
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setStudents([]);
+      setError("");
+      
       const fileReader = new FileReader();
       fileReader.onload = (event) => {
         const text = event.target?.result as string;
-        csvFileToArray(text);
+        validateCSV(text);
       };
       fileReader.readAsText(file);
     }
   };
 
-  const csvFileToArray = (string: string) => {
-    const csvHeader = string.slice(0, string.indexOf("\n")).split(",");
-    const csvRows = string.slice(string.indexOf("\n") + 1).split("\n");
+  const validateCSV = (csvString: string) => {
+    try {
+      const result = Papa.parse(csvString, {
+        header: false,
+        skipEmptyLines: true
+      });
 
-    const filteredRows = csvRows.filter(row => row.trim() !== "");
+      if (result.errors.length > 0) {
+        setError("Error parsing the CSV file.");
+        return;
+      }
 
-    const array = filteredRows.map(i => {
-      const values = i.split(",");
-      const obj = csvHeader.reduce((object, header, index) => {
-        object[header.trim()] = values[index]?.trim() || "";
-        return object;
-      }, {} as Record<string, string>);
-      return obj;
-    });
+      const output = result.data as string[][];
+      const headerRow: string[] = output[0];
+      const requiredHeaders: string[] = [
+        "Full name",
+        "Email address",
+        "Last modified (submission)",
+        "Grade",
+        "Feedback comments",
+      ];
 
-    const parsedStudents = array.map((student: Record<string, string>) => ({
-      name: student["Name"] || "",
-      email: student["Email"] || "",
-      timestamp: student["Timestamp"] || "",
-      grade: student["Grade"] || "",
-      feedback: student["Feedback"] || "",
-    }));
-    setStudents(parsedStudents);
+      const missingHeaders = requiredHeaders.filter((header) => !headerRow.includes(header));
+      if (missingHeaders.length > 0) {
+        setError(`Missing required columns: ${missingHeaders.join(", ")}`);
+        return;
+      }
+
+      const parsedStudents = output.slice(1).map((row: string[]) => {
+        const student: Record<string, string> = {};
+        headerRow.forEach((header: string, index: number) => {
+          student[header] = row[index] || "";
+        });
+        return student;
+      });
+
+      const invalidStudents = parsedStudents.filter(
+        (student) =>
+          !student["Full name"] ||
+          !student["Email address"] ||
+          !student["Last modified (submission)"]
+      );
+
+      if (invalidStudents.length > 0) {
+        setError("Some rows contain missing or invalid data.");
+        return;
+      }
+
+      setStudents(
+        parsedStudents.map((student) => ({
+          name: student["Full name"] || "",
+          email: student["Email address"] || "",
+          timestamp: student["Last modified (submission)"] || "",
+          grade: student["Grade"] || "",
+          feedback: student["Feedback comments"] || "",
+          appliedIds: [],
+        }))
+      );
+      setError("");
+    } catch (error) {
+      setError("Error parsing the CSV file.");
+    }
   };
 
   return (
@@ -128,6 +181,7 @@ const StudentList: React.FC = () => {
           <button className="studentBtn">Save Progress</button>
           <button className="studentBtn">Load Progress</button>
         </div>
+        {error && <div className="error-message">{error}</div>}
         <div className="rounded-md border">
           <div className="table-container">
             <Table>
@@ -154,8 +208,8 @@ const StudentList: React.FC = () => {
                 {table.getRowModel().rows.map(row => (
                   <TableRow
                     key={row.id}
-                    className={selectedRows.has(row.original.name) ? 'selected' : ''}
-                    onClick={() => toggleRowSelection(row.original.name)}
+                    className={selectedStudent === row.original.name ? 'selected' : ''}
+                    onClick={() => onStudentSelect(row.original.name)}
                   >
                     {row.getVisibleCells().map(cell => (
                       <TableCell key={cell.id}>

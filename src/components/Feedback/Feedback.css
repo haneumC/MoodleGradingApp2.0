@@ -42,6 +42,16 @@
     background-color: #2d2d3d;
     border-left: 4px solid #6b5de3;
     color: #ffffff;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .feedback-item.applied {
+    background-color: #2d4a3e;
+    border-left-color: #4CAF50;
+  }
+  
+  .feedback-item:not(.applied):hover {
+    background-color: #454b5a;
   }
   
   .feedback-text {

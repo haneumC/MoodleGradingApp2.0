@@ -13,62 +13,97 @@ import { Textarea } from "@/components/ui/textarea";
 
 interface FeedbackItem {
   id: number;
-  text: string;
-  deduction: number;
-  applied: boolean;
+  comment: string;
+  grade: number;
+  applied?: boolean;
 }
 
 type SortField = 'text' | 'deduction' | 'applied';
 type SortDirection = 'asc' | 'desc';
 
-const Feedback: React.FC = () => {
+interface FeedbackProps {
+  onApplyFeedback: (params: { feedbackItem: FeedbackItem; allFeedbackItems: FeedbackItem[] }) => void;
+  selectedStudent: string | null;
+  appliedIds: number[];
+  onFeedbackEdit: (oldFeedback: FeedbackItem, newFeedback: FeedbackItem) => void;
+}
+
+const Feedback: React.FC<FeedbackProps> = ({ onApplyFeedback, selectedStudent, appliedIds, onFeedbackEdit }) => {
   const defaultFeedback: FeedbackItem[] = [
-    { id: 1, text: "Add more comments", deduction: 3, applied: false },
-    { id: 2, text: "Poor indentation", deduction: 2, applied: false },
-    { id: 3, text: "Looks good!", deduction: 0, applied: false },
-    { id: 4, text: "No submission", deduction: 20, applied: false },
+    { id: 1, comment: "Add more comments", grade: 3},
+    { id: 2, comment: "Poor indentation", grade: 2},
+    { id: 3, comment: "Looks good!", grade: 0},
+    { id: 4, comment: "No submission", grade: 20},
   ];
 
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>(defaultFeedback);
   const [isAddingFeedback, setIsAddingFeedback] = useState(false);
   const [newFeedback, setNewFeedback] = useState<Omit<FeedbackItem, 'id' | 'applied'>>({ 
-    text: "", 
-    deduction: 0 
+    comment: "", 
+    grade: 0 
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingText, setEditingText] = useState("");
   const [editingDeduction, setEditingDeduction] = useState(0);
   const [sortField, setSortField] = useState<SortField>('text');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [reusableIds, setReusableIds] = useState<number[]>([]);
+  const [nextId, setNextId] = useState<number>(5);
 
   const handleAddFeedback = () => {
-    if (newFeedback.text.trim()) {
+    if (newFeedback.comment.trim()) {
+      let idToUse: number;
+      
+      if (reusableIds.length > 0) {
+        // Use the smallest available reused id
+        idToUse = Math.min(...reusableIds);
+        // Remove the used id from reusableIds
+        setReusableIds(prev => prev.filter(id => id !== idToUse));
+      } else {
+        // Use the next sequential id
+        idToUse = nextId;
+        setNextId(prev => prev + 1);
+      }
+
       setFeedbackItems([
         ...feedbackItems,
         {
-          id: Date.now(),
-          text: newFeedback.text,
-          deduction: Number(newFeedback.deduction),
+          id: idToUse,
+          comment: newFeedback.comment,
+          grade: Number(newFeedback.grade),
           applied: false
         }
       ]);
-      setNewFeedback({ text: "", deduction: 0 });
+      setNewFeedback({ comment: "", grade: 0 });
       setIsAddingFeedback(false);
     }
   };
 
   const handleStartEdit = (item: FeedbackItem) => {
     setEditingId(item.id);
-    setEditingText(item.text);
-    setEditingDeduction(item.deduction);
+    setEditingText(item.comment);
+    setEditingDeduction(item.grade);
   };
 
   const handleAcceptEdit = (id: number) => {
+    const oldFeedback = feedbackItems.find(item => item.id === id);
+    const newFeedback = {
+      id,
+      comment: editingText,
+      grade: editingDeduction,
+    };
+
     setFeedbackItems(feedbackItems.map(item =>
       item.id === id 
-        ? { ...item, text: editingText, deduction: editingDeduction } 
+        ? { ...item, comment: editingText, grade: editingDeduction } 
         : item
     ));
+
+    // Notify parent component about the edit if this feedback was applied to any student
+    if (oldFeedback && appliedIds.includes(id)) {
+      onFeedbackEdit(oldFeedback, newFeedback);
+    }
+
     setEditingId(null);
   };
 
@@ -77,25 +112,28 @@ const Feedback: React.FC = () => {
   };
 
   const handleDeleteFeedback = (id: number) => {
+    setReusableIds(prev => [...prev, id]);
     setFeedbackItems(feedbackItems.filter(item => item.id !== id));
   };
 
   const getSortedFeedbackItems = () => {
     return [...feedbackItems].sort((a, b) => {
       if (sortField === 'text') {
+        const commentA = a.comment || '';
+        const commentB = b.comment || '';
         return sortDirection === 'asc' 
-          ? a.text.localeCompare(b.text)
-          : b.text.localeCompare(a.text);
+          ? commentA.localeCompare(commentB)
+          : commentB.localeCompare(commentA);
       }
       if (sortField === 'deduction') {
         return sortDirection === 'asc' 
-          ? a.deduction - b.deduction
-          : b.deduction - a.deduction;
+          ? a.grade - b.grade
+          : b.grade - a.grade;
       }
       // sorting for applied field
       return sortDirection === 'asc' 
-        ? Number(a.applied) - Number(b.applied)
-        : Number(b.applied) - Number(a.applied);
+        ? Number(a.applied || false) - Number(b.applied || false)
+        : Number(b.applied || false) - Number(a.applied || false);
     });
   };
 
@@ -196,28 +234,34 @@ const Feedback: React.FC = () => {
                     className="cursor-pointer"
                     onClick={() => handleStartEdit(item)}
                   >
-                    <div className="bg-[#3a3f4b] text-[#e1e1e1] p-2 rounded border-l-4 border-[#5c6bc0] hover:bg-[#454b5a] transition-colors whitespace-pre-wrap break-words">
-                      {item.text}
+                    <div 
+                      className={`p-2 rounded border-l-4 transition-colors whitespace-pre-wrap break-words ${
+                        appliedIds.includes(item.id)
+                          ? 'bg-[#2d4a3e] border-[#4CAF50] text-[#e1e1e1]'  // Highlighted state
+                          : 'bg-[#3a3f4b] border-[#5c6bc0] text-[#e1e1e1] hover:bg-[#454b5a]'  // Normal state
+                      }`}
+                    >
+                      {item.comment}
                     </div>
                   </TableCell>
                   <TableCell 
                     className="text-right pr-5 text-white cursor-pointer"
                     onClick={() => handleStartEdit(item)}
                   >
-                    {item.deduction}
+                    {item.grade}
                   </TableCell>
                   <TableCell>
                     <Button
                       variant="ghost"
                       size="icon"
+                      disabled={!selectedStudent}
                       onClick={() => {
-                        setFeedbackItems(feedbackItems.map(feedback => 
-                          feedback.id === item.id 
-                            ? { ...feedback, applied: !feedback.applied }
-                            : feedback
-                        ));
+                        onApplyFeedback({
+                          feedbackItem: item,
+                          allFeedbackItems: feedbackItems
+                        });
                       }}
-                      className={`w-6 h-6 ${item.applied ? 'text-[#4CAF50]' : 'text-gray-400'}`}
+                      className={`w-6 h-6 ${appliedIds.includes(item.id) ? 'text-[#4CAF50]' : 'text-gray-400'}`}
                     >
                       ✓
                     </Button>
@@ -242,15 +286,15 @@ const Feedback: React.FC = () => {
       {isAddingFeedback ? (
         <div className="mt-4 p-4 bg-[#2d2d2d] rounded-md space-y-4">
           <Textarea
-            value={newFeedback.text}
-            onChange={(e) => setNewFeedback({ ...newFeedback, text: e.target.value })}
+            value={newFeedback.comment}
+            onChange={(e) => setNewFeedback({ ...newFeedback, comment: e.target.value })}
             placeholder="Enter feedback text"
             className="bg-[#3a3f4b] border-[#444] text-white min-h-[60px] resize-y"
           />
           <Input
             type="number"
-            value={newFeedback.deduction}
-            onChange={(e) => setNewFeedback({ ...newFeedback, deduction: Number(e.target.value) })}
+            value={newFeedback.grade}
+            onChange={(e) => setNewFeedback({ ...newFeedback, grade: Number(e.target.value) })}
             placeholder="Deduction"
             min={0}
             max={20}

@@ -110,3 +110,7 @@
 .import-file-input {
   display: none;
 }
+
+.table-cell {
+  white-space: pre-wrap;
+}
