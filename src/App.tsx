@@ -28,6 +28,9 @@ const App: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
 
+  // State to manage all feedback items
+  const [feedbackItems] = useState<FeedbackItem[]>([]);
+
   const handleStudentSelect = (studentName: string) => {
     setSelectedStudent(studentName);
   };
@@ -35,11 +38,10 @@ const App: React.FC = () => {
   const handleApplyFeedback = ({ feedbackItem, allFeedbackItems }: ApplyFeedbackParams) => {
     if (!selectedStudent) return;
 
-    setStudents(prevStudents => 
+    setStudents(prevStudents =>
       prevStudents.map(student => {
         if (student.name === selectedStudent) {
           if (student.appliedIds.includes(feedbackItem.id)) {
-            
             // Remove the feedback
             const feedbackLines = student.feedback
               .split('\n')
@@ -70,15 +72,14 @@ const App: React.FC = () => {
               appliedIds: remainingIds,
             };
           } else {
-
             // Apply the feedback
             const newAppliedIds = [...student.appliedIds, feedbackItem.id];
             const totalDeduction = allFeedbackItems
               .filter((item: FeedbackItem) => newAppliedIds.includes(item.id))
               .reduce((sum: number, item: FeedbackItem) => sum + item.grade, 0);
             const newGrade = Math.max(0, 20 - totalDeduction);
-            
-            // new feedback with line break
+
+            // New feedback with line break
             const newFeedback = student.feedback
               ? `${student.feedback.trim()}\n\n${feedbackItem.comment.trim()}`
               : feedbackItem.comment.trim();
@@ -97,10 +98,9 @@ const App: React.FC = () => {
   };
 
   const handleFeedbackEdit = (oldFeedback: FeedbackItem, newFeedback: FeedbackItem) => {
-    setStudents(prevStudents => 
+    setStudents(prevStudents =>
       prevStudents.map(student => {
         if (student.appliedIds.includes(oldFeedback.id)) {
-          
           // Replace old feedback text with new one
           const updatedFeedback = student.feedback
             .split('\n\n')
@@ -108,14 +108,13 @@ const App: React.FC = () => {
             .join('\n\n');
 
           // Recalculate grade
-          const totalDeduction = student.appliedIds
-            .reduce((sum, id) => {
-              if (id === oldFeedback.id) {
-                return sum + newFeedback.grade;
-              }
-              const feedback = feedbackItems.find(f => f.id === id);
-              return sum + (feedback?.grade || 0);
-            }, 0);
+          const totalDeduction = student.appliedIds.reduce((sum, id) => {
+            if (id === oldFeedback.id) {
+              return sum + newFeedback.grade;
+            }
+            const feedback = feedbackItems.find(f => f.id === id);
+            return sum + (feedback?.grade || 0);
+          }, 0);
 
           const newGrade = Math.max(0, 20 - totalDeduction);
 
@@ -146,7 +145,7 @@ const App: React.FC = () => {
             <button>Import Table</button>
             <button>Export Table</button>
           </div>
-          <Feedback 
+          <Feedback
             onApplyFeedback={handleApplyFeedback}
             selectedStudent={selectedStudent}
             appliedIds={students.find(s => s.name === selectedStudent)?.appliedIds || []}
@@ -154,7 +153,7 @@ const App: React.FC = () => {
           />
         </div>
         <div className="right">
-          <StudentList 
+          <StudentList
             students={students}
             setStudents={setStudents}
             selectedStudent={selectedStudent}
@@ -164,6 +163,6 @@ const App: React.FC = () => {
       </main>
     </div>
   );
-}
+};
 
 export default App;
